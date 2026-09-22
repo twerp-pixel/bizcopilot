@@ -1,0 +1,32 @@
+[
+  {
+    "id": "q1",
+    "question": "Why did SKU-1004 sales drop in the Midwest around week 9?",
+    "expected_doc_id": "note_001",
+    "expected_keywords": ["competitor", "promotion", "week 9"]
+  },
+  {
+    "id": "q2",
+    "question": "What happened to SKU-1011 in the West region in week 7?",
+    "expected_doc_id": "note_002",
+    "expected_keywords": ["stockout", "distribution", "week 7"]
+  },
+  {
+    "id": "q3",
+    "question": "Explain the sales decline for SKU-1017 in the South region around week 10.",
+    "expected_doc_id": "note_003",
+    "expected_keywords": ["quality", "recall", "week 10"]
+  },
+  {
+    "id": "q4",
+    "question": "Is SKU-1004's demand softness this quarter due to a supply issue?",
+    "expected_doc_id": "note_007",
+    "expected_keywords": ["vendor", "no supply issues"]
+  },
+  {
+    "id": "q5",
+    "question": "Has the West region's distribution delay from week 7 been resolved?",
+    "expected_doc_id": "note_008",
+    "expected_keywords": ["resolved", "week 8"]
+  }
+]

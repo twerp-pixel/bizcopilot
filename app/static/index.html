@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BizCopilot</title>
+<style>
+  body { font-family: -apple-system, Segoe UI, sans-serif; max-width: 760px; margin: 40px auto; padding: 0 16px; background:#fafafa; color:#1a1a1a; }
+  h1 { font-size: 1.4rem; }
+  #question { width: 100%; padding: 10px; font-size: 1rem; box-sizing: border-box; }
+  button { margin-top: 8px; padding: 8px 16px; font-size: 1rem; cursor: pointer; }
+  .memo { white-space: pre-wrap; background: white; border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-top: 20px; line-height: 1.5; }
+  .meta { font-size: 0.85rem; color: #666; margin-top: 8px; }
+  .grounded-ok { color: #2a7d2a; }
+  .grounded-bad { color: #b23; }
+  .examples { font-size: 0.85rem; color: #555; margin-top: 6px; }
+  .examples button { font-size: 0.8rem; padding: 4px 8px; margin: 2px 4px 2px 0; }
+</style>
+</head>
+<body>
+  <h1>BizCopilot — Business Analyst Copilot</h1>
+  <p>Ask a business question about the synthetic retail dataset (sales, inventory, promotions + analyst notes).</p>
+
+  <input id="question" placeholder="e.g. Why did SKU-1004 sales drop in the Midwest around week 9?" />
+  <br>
+  <button onclick="ask()">Ask</button>
+
+  <div class="examples">
+    Try:
+    <button onclick="fillAndAsk('Why did SKU-1004 sales drop in the Midwest around week 9?')">SKU-1004 Midwest</button>
+    <button onclick="fillAndAsk('What happened to SKU-1011 in the West region in week 7?')">SKU-1011 West</button>
+  </div>
+
+  <div id="output"></div>
+
+<script>
+function fillAndAsk(q) {
+  document.getElementById('question').value = q;
+  ask();
+}
+
+async function ask() {
+  const q = document.getElementById('question').value.trim();
+  if (!q) return;
+  const output = document.getElementById('output');
+  output.innerHTML = '<p>Thinking...</p>';
+
+  try {
+    const res = await fetch('/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: q })
+    });
+    const data = await res.json();
+    const groundedClass = data.grounded ? 'grounded-ok' : 'grounded-bad';
+    const groundedText = data.grounded ? 'Grounded ✓' : 'Some claims unverified ⚠';
+    output.innerHTML = `
+      <div class="memo">${escapeHtml(data.memo)}</div>
+      <div class="meta">
+        <span class="${groundedClass}">${groundedText}</span> ·
+        latency: ${data.latency_sec}s
+        ${data.unverified_numbers && data.unverified_numbers.length ? '· unverified: ' + data.unverified_numbers.join(', ') : ''}
+      </div>
+    `;
+  } catch (e) {
+    output.innerHTML = '<p style="color:red">Error: ' + e + '</p>';
+  }
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+</script>
+</body>
+</html>

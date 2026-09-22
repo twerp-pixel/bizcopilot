@@ -1,0 +1,26 @@
+[
+  {
+    "sku": "SKU-1004",
+    "region": "Midwest",
+    "week": 9,
+    "type": "competitor_promo",
+    "drop_pct": 0.32,
+    "doc_id": "note_001"
+  },
+  {
+    "sku": "SKU-1011",
+    "region": "West",
+    "week": 7,
+    "type": "stockout",
+    "drop_pct": 0.55,
+    "doc_id": "note_002"
+  },
+  {
+    "sku": "SKU-1017",
+    "region": "South",
+    "week": 10,
+    "type": "quality_recall",
+    "drop_pct": 0.7,
+    "doc_id": "note_003"
+  }
+]

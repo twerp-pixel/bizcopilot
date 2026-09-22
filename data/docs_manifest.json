@@ -1,0 +1,42 @@
+[
+  {
+    "doc_id": "note_001",
+    "title": "Competitor Watch - Week 9 Midwest",
+    "path": "docs/note_001.txt"
+  },
+  {
+    "doc_id": "note_002",
+    "title": "Supply Chain Alert - Week 7 West Region",
+    "path": "docs/note_002.txt"
+  },
+  {
+    "doc_id": "note_003",
+    "title": "Quality Notice - Week 10 South Region",
+    "path": "docs/note_003.txt"
+  },
+  {
+    "doc_id": "note_004",
+    "title": "General Market Note - Q3",
+    "path": "docs/note_004.txt"
+  },
+  {
+    "doc_id": "note_005",
+    "title": "Promo Calendar Overview",
+    "path": "docs/note_005.txt"
+  },
+  {
+    "doc_id": "note_006",
+    "title": "Regional Performance Summary",
+    "path": "docs/note_006.txt"
+  },
+  {
+    "doc_id": "note_007",
+    "title": "Vendor Update - SKU-1004",
+    "path": "docs/note_007.txt"
+  },
+  {
+    "doc_id": "note_008",
+    "title": "Store Ops Note - West Region",
+    "path": "docs/note_008.txt"
+  }
+]
