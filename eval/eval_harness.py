@@ -5,8 +5,8 @@ Two parts:
 1. Retrieval-only eval: Recall@K and MRR of the hybrid retriever against the
    known-correct doc_id for each test question (no LLM needed - fast, free,
    run this constantly while iterating on retrieval).
-2. End-to-end eval: runs the full agent (requires ANTHROPIC_API_KEY) and
-   reports groundedness rate + latency across the test set.
+2. End-to-end eval: runs the full agent (requires a configured LLM provider like ANTHROPIC_API_KEY)
+   and reports groundedness rate + latency across the test set.
 
 Run:
   python3 -m eval.eval_harness --retrieval-only     # no API key needed
@@ -73,6 +73,10 @@ def eval_end_to_end():
             "unverified_numbers": r["unverified_numbers"],
             "retried": r["retried"],
             "latency_sec": r["latency_sec"],
+            "memo": r.get("memo"),
+            "tool_results": r.get("tool_results"),
+            "plan": r.get("plan"),
+            "timings": r.get("timings"),
         })
         print(f"[{item['id']}] grounded={grounded} retried={r['retried']} latency={r['latency_sec']}s")
 
@@ -104,4 +108,4 @@ if __name__ == "__main__":
     if not args.retrieval_only:
         eval_end_to_end()
     else:
-        print("\n(Skipped end-to-end eval - remove --retrieval-only to run it, requires ANTHROPIC_API_KEY)")
+        print("\n(Skipped end-to-end eval - remove --retrieval-only to run it, requires API KEY)")
