@@ -1,0 +1,437 @@
+{
+  "n": 5,
+  "groundedness_rate": 0.4,
+  "avg_latency_sec": 20.75,
+  "details": [
+    {
+      "id": "q1",
+      "question": "Why did SKU-1004 sales drop in the Midwest around week 9?",
+      "grounded": false,
+      "unverified_numbers": [
+        "10",
+        "30.906389301634473"
+      ],
+      "retried": true,
+      "latency_sec": 5.86,
+      "memo": "**Executive Summary**  \nSKU\u20111004 sales in the Midwest fell from 673 units in week\u202f8 to 465 units in week\u202f9, a -30.906389301634473\u202f% drop (source: sales table). Inventory was zero on hand both weeks, and no internal promotion was run (source: inventory table, promo table). External market activity\u2014specifically a competitor\u2019s 25\u202f% off promotion\u2014appears to be the most plausible cause (source: note_001).\n\n**Diagnosis**  \n- **Sales:** Week\u202f9 units 465, down 30.906389301634473\u202f% from week\u202f8 (673) (source: sales table).  \n- **Inventory:** Total on\u2011hand 0 for both weeks (source: inventory table).  \n- **Promotions:** No internal promo activity (promo_count\u202f0) (source: promo table).  \n- **External Factor:** Competitor launched a 25\u202f% off promo in the Midwest during week\u202f9 (source: note_001).\n\n**Supporting Evidence**  \n- (source: sales table, week 8: 673 units; week\u202f9: 465 units)  \n- (source: inventory table, week 8: 0 on\u2011hand; week\u202f9: 0 on\u2011hand)  \n- (source: promo table, week\u202f8: 0; week\u202f9: 0)  \n- (source: note_001, competitor 25\u202f% off promotion in week\u202f9)\n\n**Recommended Action**  \n- Monitor week\u202f10 sales to see if the dip persists after the competitor promotion ends.  \n- Consider a short\u2011term price or in\u2011store promotion for SKU\u20111004 to regain market share.  \n- Review supplier lead times to confirm that zero inventory will not translate into a stockout risk in future weeks.\n\n**Confidence & Caveats**  \nConfidence is moderate because the data show a clear sales drop, zero inventory, and no internal promo, while an external competitor promotion is documented. No direct causation is proven; the competitor activity is a strong hypothesis. No inventory thresholds or safety\u2011stock numbers are available to confirm a stockout risk.",
+      "tool_results": [
+        {
+          "tool": "sql",
+          "query": "WITH sales_cte AS (\n    SELECT week, SUM(units) AS total_units, SUM(revenue) AS total_rev\n    FROM sales\n    WHERE sku = 'SKU-1004' AND region = 'Midwest'\n    GROUP BY week\n), inventory_cte AS (\n    SELECT week, SUM(on_hand) AS total_on_hand\n    FROM inventory\n    WHERE sku = 'SKU-1004' AND region = 'Midwest'\n    GROUP BY week\n), promo_cte AS (\n    SELECT week, SUM(promo_flag) AS promo_count\n    FROM promotions\n    WHERE sku = 'SKU-1004' AND region = 'Midwest'\n    GROUP BY week\n)\nSELECT s.week,\n       s.total_units,\n       i.total_on_hand,\n       p.promo_count,\n       100.0 * (s.total_units - LAG(s.total_units) OVER (ORDER BY s.week)) / NULLIF(LAG(s.total_units) OVER (ORDER BY s.week), 0) AS pct_change_units\nFROM sales_cte s\nLEFT JOIN inventory_cte i ON s.week = i.week\nLEFT JOIN promo_cte p ON s.week = p.week\nWHERE s.week IN (8,9)\nORDER BY s.week;",
+          "result": [
+            {
+              "week": 8,
+              "total_units": 673,
+              "total_on_hand": 0,
+              "promo_count": 0,
+              "pct_change_units": null
+            },
+            {
+              "week": 9,
+              "total_units": 465,
+              "total_on_hand": 0,
+              "promo_count": 0,
+              "pct_change_units": -30.906389301634473
+            }
+          ]
+        },
+        {
+          "tool": "retrieve",
+          "query": "Provide any relevant company notes or market reports for SKU-1004 in the Midwest during week 9 that might explain the sales dip.",
+          "result": [
+            {
+              "doc_id": "note_001",
+              "title": "Competitor Watch - Week 9 Midwest",
+              "text": "Competitor Watch - Week 9 Midwest\n\nA major competitor launched an aggressive 25% off promotion on comparable products across Midwest stores starting week 9. Field reps report noticeable foot traffic shift for SKU-1004 in that region during the promo window.\n",
+              "score": 0.03279
+            },
+            {
+              "doc_id": "note_007",
+              "title": "Vendor Update - SKU-1004",
+              "text": "Vendor Update - SKU-1004\n\nVendor confirmed no supply issues for SKU-1004 this quarter; any demand softness is attributed to external market factors rather than availability.\n",
+              "score": 0.032
+            },
+            {
+              "doc_id": "note_006",
+              "title": "Regional Performance Summary",
+              "text": "Regional Performance Summary\n\nNortheast and South regions have shown the most stable week-over-week sales patterns this quarter relative to Midwest and West, which have seen more promotional and competitive activity.\n",
+              "score": 0.0315
+            }
+          ]
+        }
+      ],
+      "plan": {
+        "steps": [
+          {
+            "tool": "sql",
+            "args": {
+              "query": "WITH sales_cte AS (\n    SELECT week, SUM(units) AS total_units, SUM(revenue) AS total_rev\n    FROM sales\n    WHERE sku = 'SKU-1004' AND region = 'Midwest'\n    GROUP BY week\n), inventory_cte AS (\n    SELECT week, SUM(on_hand) AS total_on_hand\n    FROM inventory\n    WHERE sku = 'SKU-1004' AND region = 'Midwest'\n    GROUP BY week\n), promo_cte AS (\n    SELECT week, SUM(promo_flag) AS promo_count\n    FROM promotions\n    WHERE sku = 'SKU-1004' AND region = 'Midwest'\n    GROUP BY week\n)\nSELECT s.week,\n       s.total_units,\n       i.total_on_hand,\n       p.promo_count,\n       100.0 * (s.total_units - LAG(s.total_units) OVER (ORDER BY s.week)) / NULLIF(LAG(s.total_units) OVER (ORDER BY s.week), 0) AS pct_change_units\nFROM sales_cte s\nLEFT JOIN inventory_cte i ON s.week = i.week\nLEFT JOIN promo_cte p ON s.week = p.week\nWHERE s.week IN (8,9)\nORDER BY s.week;"
+            }
+          },
+          {
+            "tool": "retrieve",
+            "args": {
+              "query": "Provide any relevant company notes or market reports for SKU-1004 in the Midwest during week 9 that might explain the sales dip."
+            }
+          }
+        ]
+      },
+      "timings": {
+        "plan_sec": 1.56,
+        "execute_sec": 0.03,
+        "synthesize_sec": 2.61,
+        "retry_sec": 1.66,
+        "verify_sec": 0.0023
+      }
+    },
+    {
+      "id": "q2",
+      "question": "What happened to SKU-1011 in the West region in week 7?",
+      "grounded": true,
+      "unverified_numbers": [],
+      "retried": true,
+      "latency_sec": 4.89,
+      "memo": "**Executive Summary**  \nSKU\u20111011 in the West region sold 114 units and generated $2,177.40 revenue in week\u202f7. On\u2011hand inventory was 344 units, and no promotions were active. A supply\u2011chain delay caused partial stockouts at several West stores during that week.\n\n**Diagnosis**  \n- Sales volume (114 units) and revenue ($2,177.40) were recorded for week\u202f7. (source: sales table, SKU\u20111011/West/week\u202f7)  \n- Inventory remained high at 344 units, indicating that the stockouts were likely due to distribution delays, not a lack of inventory. (source: inventory table, SKU\u20111011/West/week\u202f7)  \n- No promotional activity was recorded (promo_flag_sum\u202f=\u202f0). (source: promotions table, SKU\u20111011/West/week\u202f7)  \n- A note reports a distribution center delay and partial stockouts at West stores. (source: note_002)\n\n**Supporting Evidence**  \n- Sales: 114 units, $2,177.40 revenue. (source: sales table)  \n- Inventory: 344 units on hand. (source: inventory table)  \n- No promotion: 0 promo flag sum. (source: promotions table)  \n- Supply\u2011chain alert: distribution center delay, partial stockouts. (source: note_002)\n\n**Recommended Action**  \n- Verify the distribution center\u2019s recovery timeline and ensure that shipping schedules are restored to prevent future stockouts.  \n- Monitor West store sales in the following weeks for any lingering effects.  \n- Keep inventory levels stable; current on\u2011hand stock (344 units) is sufficient for normal demand.  \n\n**Confidence & Caveats**  \nConfidence is high that the partial stockouts were caused by the documented distribution center delay, as the evidence directly links the event to SKU\u20111011 in the West region week\u202f7. No promotional or inventory deficits were found, so other factors are not supported by the available data. Future weeks should be reviewed to confirm that sales and inventory return to baseline levels.",
+      "tool_results": [
+        {
+          "tool": "sql",
+          "query": "WITH sales_cte AS (\n  SELECT week, SUM(units) AS total_units, SUM(revenue) AS total_revenue\n  FROM sales\n  WHERE sku = 'SKU-1011' AND region = 'West' AND week = 7\n  GROUP BY week\n),\n inventory_cte AS (\n  SELECT week, SUM(on_hand) AS total_on_hand\n  FROM inventory\n  WHERE sku = 'SKU-1011' AND region = 'West' AND week = 7\n  GROUP BY week\n),\n promo_cte AS (\n  SELECT week, SUM(promo_flag) AS promo_flag_sum\n  FROM promotions\n  WHERE sku = 'SKU-1011' AND region = 'West' AND week = 7\n  GROUP BY week\n)\nSELECT\n  s.week,\n  s.total_units,\n  s.total_revenue,\n  i.total_on_hand,\n  p.promo_flag_sum\nFROM sales_cte s\nLEFT JOIN inventory_cte i ON s.week = i.week\nLEFT JOIN promo_cte p ON s.week = p.week;",
+          "result": [
+            {
+              "week": 7,
+              "total_units": 114,
+              "total_revenue": 2177.4,
+              "total_on_hand": 344,
+              "promo_flag_sum": 0
+            }
+          ]
+        },
+        {
+          "tool": "retrieve",
+          "query": "Notes on SKU-1011 performance in West region week 7.",
+          "result": [
+            {
+              "doc_id": "note_002",
+              "title": "Supply Chain Alert - Week 7 West Region",
+              "text": "Supply Chain Alert - Week 7 West Region\n\nSKU-1011 experienced a distribution center delay affecting West region stores in week 7, resulting in partial stockouts at several locations for several days that week.\n",
+              "score": 0.03202
+            },
+            {
+              "doc_id": "note_001",
+              "title": "Competitor Watch - Week 9 Midwest",
+              "text": "Competitor Watch - Week 9 Midwest\n\nA major competitor launched an aggressive 25% off promotion on comparable products across Midwest stores starting week 9. Field reps report noticeable foot traffic shift for SKU-1004 in that region during the promo window.\n",
+              "score": 0.032
+            },
+            {
+              "doc_id": "note_006",
+              "title": "Regional Performance Summary",
+              "text": "Regional Performance Summary\n\nNortheast and South regions have shown the most stable week-over-week sales patterns this quarter relative to Midwest and West, which have seen more promotional and competitive activity.\n",
+              "score": 0.0315
+            }
+          ]
+        }
+      ],
+      "plan": {
+        "steps": [
+          {
+            "tool": "sql",
+            "args": {
+              "query": "WITH sales_cte AS (\n  SELECT week, SUM(units) AS total_units, SUM(revenue) AS total_revenue\n  FROM sales\n  WHERE sku = 'SKU-1011' AND region = 'West' AND week = 7\n  GROUP BY week\n),\n inventory_cte AS (\n  SELECT week, SUM(on_hand) AS total_on_hand\n  FROM inventory\n  WHERE sku = 'SKU-1011' AND region = 'West' AND week = 7\n  GROUP BY week\n),\n promo_cte AS (\n  SELECT week, SUM(promo_flag) AS promo_flag_sum\n  FROM promotions\n  WHERE sku = 'SKU-1011' AND region = 'West' AND week = 7\n  GROUP BY week\n)\nSELECT\n  s.week,\n  s.total_units,\n  s.total_revenue,\n  i.total_on_hand,\n  p.promo_flag_sum\nFROM sales_cte s\nLEFT JOIN inventory_cte i ON s.week = i.week\nLEFT JOIN promo_cte p ON s.week = p.week;"
+            }
+          },
+          {
+            "tool": "retrieve",
+            "args": {
+              "query": "Notes on SKU-1011 performance in West region week 7."
+            }
+          }
+        ]
+      },
+      "timings": {
+        "plan_sec": 1.2,
+        "execute_sec": 0.02,
+        "synthesize_sec": 1.83,
+        "retry_sec": 1.85,
+        "verify_sec": 0.0019
+      }
+    },
+    {
+      "id": "q3",
+      "question": "Explain the sales decline for SKU-1017 in the South region around week 10.",
+      "grounded": false,
+      "unverified_numbers": [
+        "67.54"
+      ],
+      "retried": true,
+      "latency_sec": 28.26,
+      "memo": "**Executive Summary**  \nSKU\u20111017 sales in the South fell sharply from week\u202f9 to week\u202f10: units dropped from 268 to 87 (\u201167.54\u202f%), and revenue fell from $5,764.68 to $1,871.37 (\u201167.54\u202f%). Inventory levels were slightly lower (192 \u2192 188). A quality notice (note_003) indicates that some stores pulled affected lots during week\u202f10.\n\n**Diagnosis**  \nThe data show a simultaneous, proportionate decline in units and revenue, matching a 67.54\u202f% drop. No promotional activity occurred in week\u202f9 (promo_count\u202f0), but a single promotion was recorded in week\u202f10. The inventory reduction is minimal and cannot explain the large sales drop. The quality notice identifies a voluntary review that caused some stores to remove affected lots, creating a stock\u2011out risk and directly limiting the available product for purchase.\n\n**Supporting Evidence**  \n- Week\u202f9 sales: 268 units, $5,764.68 revenue, 192 on\u2011hand, promo\u202f0 (source: sales table).  \n- Week\u202f10 sales: 87 units, $1,871.37 revenue, 188 on\u2011hand, promo\u202f1, pct_change\u202f\u201167.54\u202f% (source: sales table).  \n- Internal note: \u201cQuality Notice \u2013 Week\u202f10 South Region\u201d notes that affected lots were pulled pending review (source: note_003).\n\n**Recommended Action**  \n- Verify that all remaining inventory complies with quality standards and expedite the review so that unaffected lots can be restocked.  \n- Communicate the status of the quality review to store teams to minimize further loss of shelf space.  \n- Monitor sales and inventory for the next two weeks to confirm recovery once the affected lots are cleared.\n\n**Confidence & Caveats**  \nConfidence is high that the quality review is the primary driver because it is the only documented event affecting SKU\u20111017 in the South during week\u202f10. Other factors (e.g., competitor promos) are noted only for different SKUs or regions and thus are not relevant here. If additional supply\u2011chain issues surface, they should be evaluated separately.",
+      "tool_results": [
+        {
+          "tool": "sql",
+          "query": "WITH sales_cte AS (\n    SELECT week, SUM(units) AS units, SUM(revenue) AS revenue\n    FROM sales\n    WHERE sku = 'SKU-1017' AND region = 'South'\n      AND week BETWEEN 9 AND 10\n    GROUP BY week\n), inventory_cte AS (\n    SELECT week, SUM(on_hand) AS total_on_hand\n    FROM inventory\n    WHERE sku = 'SKU-1017' AND region = 'South'\n      AND week BETWEEN 9 AND 10\n    GROUP BY week\n), promo_cte AS (\n    SELECT week, SUM(promo_flag) AS promo_count\n    FROM promotions\n    WHERE sku = 'SKU-1017' AND region = 'South'\n      AND week BETWEEN 9 AND 10\n    GROUP BY week\n)\nSELECT\n    s.week,\n    s.units,\n    s.revenue,\n    i.total_on_hand,\n    p.promo_count,\n    ROUND(100.0 * (s.units - LAG(s.units) OVER (ORDER BY s.week)) / NULLIF(LAG(s.units) OVER (ORDER BY s.week),0),2) AS pct_change_units,\n    ROUND(100.0 * (s.revenue - LAG(s.revenue) OVER (ORDER BY s.week)) / NULLIF(LAG(s.revenue) OVER (ORDER BY s.week),0),2) AS pct_change_revenue\nFROM sales_cte s\nLEFT JOIN inventory_cte i ON s.week = i.week\nLEFT JOIN promo_cte p ON s.week = p.week\nORDER BY s.week;",
+          "result": [
+            {
+              "week": 9,
+              "units": 268,
+              "revenue": 5764.68,
+              "total_on_hand": 192,
+              "promo_count": 0,
+              "pct_change_units": null,
+              "pct_change_revenue": null
+            },
+            {
+              "week": 10,
+              "units": 87,
+              "revenue": 1871.37,
+              "total_on_hand": 188,
+              "promo_count": 1,
+              "pct_change_units": -67.54,
+              "pct_change_revenue": -67.54
+            }
+          ]
+        },
+        {
+          "tool": "retrieve",
+          "query": "Provide any internal notes or commentary regarding SKU-1017 sales in the South region during week 10 that might explain the decline, such as supply chain issues, competitor activity, or marketing changes.",
+          "result": [
+            {
+              "doc_id": "note_003",
+              "title": "Quality Notice - Week 10 South Region",
+              "text": "Quality Notice - Week 10 South Region\n\nA voluntary quality review was initiated for a specific batch of SKU-1017 in week 10, affecting South region stores. Some stores pulled affected lots from shelves pending review, reducing available units for sale.\n",
+              "score": 0.03252
+            },
+            {
+              "doc_id": "note_001",
+              "title": "Competitor Watch - Week 9 Midwest",
+              "text": "Competitor Watch - Week 9 Midwest\n\nA major competitor launched an aggressive 25% off promotion on comparable products across Midwest stores starting week 9. Field reps report noticeable foot traffic shift for SKU-1004 in that region during the promo window.\n",
+              "score": 0.03202
+            },
+            {
+              "doc_id": "note_002",
+              "title": "Supply Chain Alert - Week 7 West Region",
+              "text": "Supply Chain Alert - Week 7 West Region\n\nSKU-1011 experienced a distribution center delay affecting West region stores in week 7, resulting in partial stockouts at several locations for several days that week.\n",
+              "score": 0.032
+            }
+          ]
+        }
+      ],
+      "plan": {
+        "steps": [
+          {
+            "tool": "sql",
+            "args": {
+              "query": "WITH sales_cte AS (\n    SELECT week, SUM(units) AS units, SUM(revenue) AS revenue\n    FROM sales\n    WHERE sku = 'SKU-1017' AND region = 'South'\n      AND week BETWEEN 9 AND 10\n    GROUP BY week\n), inventory_cte AS (\n    SELECT week, SUM(on_hand) AS total_on_hand\n    FROM inventory\n    WHERE sku = 'SKU-1017' AND region = 'South'\n      AND week BETWEEN 9 AND 10\n    GROUP BY week\n), promo_cte AS (\n    SELECT week, SUM(promo_flag) AS promo_count\n    FROM promotions\n    WHERE sku = 'SKU-1017' AND region = 'South'\n      AND week BETWEEN 9 AND 10\n    GROUP BY week\n)\nSELECT\n    s.week,\n    s.units,\n    s.revenue,\n    i.total_on_hand,\n    p.promo_count,\n    ROUND(100.0 * (s.units - LAG(s.units) OVER (ORDER BY s.week)) / NULLIF(LAG(s.units) OVER (ORDER BY s.week),0),2) AS pct_change_units,\n    ROUND(100.0 * (s.revenue - LAG(s.revenue) OVER (ORDER BY s.week)) / NULLIF(LAG(s.revenue) OVER (ORDER BY s.week),0),2) AS pct_change_revenue\nFROM sales_cte s\nLEFT JOIN inventory_cte i ON s.week = i.week\nLEFT JOIN promo_cte p ON s.week = p.week\nORDER BY s.week;"
+            }
+          },
+          {
+            "tool": "retrieve",
+            "args": {
+              "query": "Provide any internal notes or commentary regarding SKU-1017 sales in the South region during week 10 that might explain the decline, such as supply chain issues, competitor activity, or marketing changes."
+            }
+          }
+        ]
+      },
+      "timings": {
+        "plan_sec": 2.66,
+        "execute_sec": 0.03,
+        "synthesize_sec": 14.72,
+        "retry_sec": 10.85,
+        "verify_sec": 0.0021
+      }
+    },
+    {
+      "id": "q4",
+      "question": "Is SKU-1004's demand softness this quarter due to a supply issue?",
+      "grounded": true,
+      "unverified_numbers": [],
+      "retried": false,
+      "latency_sec": 22.73,
+      "memo": "**Executive Summary**  \nSKU\u20111004 saw a mild dip in week\u202f11 (\u20116.38\u202f% units, \u20116.38\u202f% revenue) but recovered in week\u202f12 (+3.14\u202f% units, +3.14\u202f% rev). Inventory remained at zero throughout the four\u2011week period, and vendor notes confirm no supply disruptions. Demand softness appears linked to external market factors, not availability.\n\n**Diagnosis**  \n- Week\u202f9\u201310 growth (+11.09\u202f%) followed by a week\u201111 decline.  \n- Inventory on hand stayed at zero for weeks\u202f9\u201112 (source: sales table, SKU\u20111004, weeks\u202f9\u201112).  \n- Vendor report states \u201cno supply issues for SKU\u20111004 this quarter\u201d (source: note_007).  \n- Competitor launched a 25\u202f% off promo in week\u202f9 (source: note_001), coinciding with the initial demand spike.\n\n**Supporting Evidence**  \n- Sales data: week\u202f11 units 2,804 vs week\u202f10 2,995 (\u20116.38\u202f%) and revenue 42,845.12 vs 45,763.6 (\u20116.38\u202f%) (source: sales table, SKU\u20111004, week\u202f11).  \n- Zero on\u2011hand inventory across all weeks (source: inventory table, SKU\u20111004, weeks\u202f9\u201112).  \n- Vendor confirmation of no supply issues (source: note_007).  \n- Competitor promo noted in week\u202f9 (source: note_001).\n\n**Recommended Action**  \n- Monitor market\u2011price shifts and competitor activity; consider aligning promotional strategy with competitor moves to mitigate demand softness.  \n- Maintain current supply chain monitoring, but no immediate corrective action needed for inventory or supply.\n\n**Confidence & Caveats**  \nHigh confidence that supply is not the cause, as vendor evidence explicitly states no issues. The data set is limited to weeks\u202f9\u201112; broader trends beyond this window are unknown. No proof of actual stockouts, only risk indicated by zero on\u2011hand inventory.",
+      "tool_results": [
+        {
+          "tool": "sql",
+          "query": "WITH sales_agg AS (\n    SELECT week, SUM(units) AS total_units, SUM(revenue) AS total_rev\n    FROM sales\n    WHERE sku = 'SKU-1004'\n    GROUP BY week\n), inventory_agg AS (\n    SELECT week, SUM(on_hand) AS total_on_hand\n    FROM inventory\n    WHERE sku = 'SKU-1004'\n    GROUP BY week\n), promo_agg AS (\n    SELECT week, SUM(promo_flag) AS promo_count\n    FROM promotions\n    WHERE sku = 'SKU-1004'\n    GROUP BY week\n)\nSELECT s.week,\n       s.total_units,\n       s.total_rev,\n       i.total_on_hand,\n       p.promo_count,\n       100.0 * (s.total_units - LAG(s.total_units) OVER (ORDER BY s.week)) / NULLIF(LAG(s.total_units) OVER (ORDER BY s.week),0) AS pct_change_units,\n       100.0 * (s.total_rev - LAG(s.total_rev) OVER (ORDER BY s.week)) / NULLIF(LAG(s.total_rev) OVER (ORDER BY s.week),0) AS pct_change_rev\nFROM sales_agg s\nLEFT JOIN inventory_agg i ON s.week = i.week\nLEFT JOIN promo_agg p ON s.week = p.week\nWHERE s.week BETWEEN 9 AND 12\nORDER BY s.week;",
+          "result": [
+            {
+              "week": 9,
+              "total_units": 2696,
+              "total_rev": 41194.880000000005,
+              "total_on_hand": 0,
+              "promo_count": 2,
+              "pct_change_units": null,
+              "pct_change_rev": null
+            },
+            {
+              "week": 10,
+              "total_units": 2995,
+              "total_rev": 45763.6,
+              "total_on_hand": 0,
+              "promo_count": 2,
+              "pct_change_units": 11.090504451038576,
+              "pct_change_rev": 11.09050445103856
+            },
+            {
+              "week": 11,
+              "total_units": 2804,
+              "total_rev": 42845.12,
+              "total_on_hand": 0,
+              "promo_count": 2,
+              "pct_change_units": -6.377295492487479,
+              "pct_change_rev": -6.3772954924874705
+            },
+            {
+              "week": 12,
+              "total_units": 2892,
+              "total_rev": 44189.76,
+              "total_on_hand": 0,
+              "promo_count": 1,
+              "pct_change_units": 3.138373751783167,
+              "pct_change_rev": 3.138373751783165
+            }
+          ]
+        },
+        {
+          "tool": "retrieve",
+          "query": "Check for any supply chain disruptions reported for SKU-1004 in the last quarter.",
+          "result": [
+            {
+              "doc_id": "note_007",
+              "title": "Vendor Update - SKU-1004",
+              "text": "Vendor Update - SKU-1004\n\nVendor confirmed no supply issues for SKU-1004 this quarter; any demand softness is attributed to external market factors rather than availability.\n",
+              "score": 0.03279
+            },
+            {
+              "doc_id": "note_002",
+              "title": "Supply Chain Alert - Week 7 West Region",
+              "text": "Supply Chain Alert - Week 7 West Region\n\nSKU-1011 experienced a distribution center delay affecting West region stores in week 7, resulting in partial stockouts at several locations for several days that week.\n",
+              "score": 0.03226
+            },
+            {
+              "doc_id": "note_001",
+              "title": "Competitor Watch - Week 9 Midwest",
+              "text": "Competitor Watch - Week 9 Midwest\n\nA major competitor launched an aggressive 25% off promotion on comparable products across Midwest stores starting week 9. Field reps report noticeable foot traffic shift for SKU-1004 in that region during the promo window.\n",
+              "score": 0.03126
+            }
+          ]
+        }
+      ],
+      "plan": {
+        "steps": [
+          {
+            "tool": "sql",
+            "args": {
+              "query": "WITH sales_agg AS (\n    SELECT week, SUM(units) AS total_units, SUM(revenue) AS total_rev\n    FROM sales\n    WHERE sku = 'SKU-1004'\n    GROUP BY week\n), inventory_agg AS (\n    SELECT week, SUM(on_hand) AS total_on_hand\n    FROM inventory\n    WHERE sku = 'SKU-1004'\n    GROUP BY week\n), promo_agg AS (\n    SELECT week, SUM(promo_flag) AS promo_count\n    FROM promotions\n    WHERE sku = 'SKU-1004'\n    GROUP BY week\n)\nSELECT s.week,\n       s.total_units,\n       s.total_rev,\n       i.total_on_hand,\n       p.promo_count,\n       100.0 * (s.total_units - LAG(s.total_units) OVER (ORDER BY s.week)) / NULLIF(LAG(s.total_units) OVER (ORDER BY s.week),0) AS pct_change_units,\n       100.0 * (s.total_rev - LAG(s.total_rev) OVER (ORDER BY s.week)) / NULLIF(LAG(s.total_rev) OVER (ORDER BY s.week),0) AS pct_change_rev\nFROM sales_agg s\nLEFT JOIN inventory_agg i ON s.week = i.week\nLEFT JOIN promo_agg p ON s.week = p.week\nWHERE s.week BETWEEN 9 AND 12\nORDER BY s.week;"
+            }
+          },
+          {
+            "tool": "retrieve",
+            "args": {
+              "query": "Check for any supply chain disruptions reported for SKU-1004 in the last quarter."
+            }
+          }
+        ]
+      },
+      "timings": {
+        "plan_sec": 7.0,
+        "execute_sec": 0.02,
+        "synthesize_sec": 15.71,
+        "retry_sec": 0.0,
+        "verify_sec": 0.0011
+      }
+    },
+    {
+      "id": "q5",
+      "question": "Has the West region's distribution delay from week 7 been resolved?",
+      "grounded": false,
+      "unverified_numbers": [
+        "1",
+        "1.34",
+        "10",
+        "119.78",
+        "2",
+        "204",
+        "207",
+        "248",
+        "272",
+        "67",
+        "73.43"
+      ],
+      "retried": true,
+      "latency_sec": 42.0,
+      "memo": "**Executive Summary**  \nThe West region\u2019s distribution delay reported in week\u202f7 was resolved by week\u202f8, as indicated by operational notes and inventory recovery.\n\n**Diagnosis**  \n- Week\u202f7 sales: 10\u202f204 units, $204\u202f119.78 revenue, on\u2011hand inventory 2\u202f248 units.  \n- Week\u202f8 sales: 10\u202f067 units, $207\u202f073.43 revenue, on\u2011hand inventory 1\u202f272 units.  \n- Week\u2011over\u2011week change: units \u22121.34%, revenue +1.45%.  \n- Promotions remained constant at 8 each week.\n\n**Supporting Evidence**  \n- Operational note \u201cStore Ops Note \u2013 West Region\u201d (note_008) states that \u201cWest region distribution center delays in week\u202f7 were resolved by week\u202f8\u201d (source: note_008).  \n- Sales table shows a slight decline in units but a small revenue increase (source: sales table, weeks\u202f7\u20138).  \n- Inventory table shows a drop in on\u2011hand inventory from 2\u202f248 to 1\u202f272 units (source: inventory table, weeks\u202f7\u20138).  \n\n**Recommended Action**  \n- Monitor week\u2011over\u2011week inventory levels to confirm sustained recovery.  \n- Verify that stockouts reported in week\u202f7 did not recur in week\u202f8 by reviewing point\u2011of\u2011sale data for the affected SKU (SKU\u20111011).  \n- Maintain current promotional cadence; no change is warranted based on the data.\n\n**Confidence & Caveats**  \n- Confidence is high that the distribution delay was resolved by week\u202f8 because the note explicitly states resolution.  \n- The inventory drop from week\u202f7 to week\u202f8 does not prove a stockout occurred; it signals a risk that should be tracked.  \n- No evidence of additional delays or supply issues beyond week\u202f8 is present in the available data.",
+      "tool_results": [
+        {
+          "tool": "sql",
+          "query": "WITH sales_cte AS (\n  SELECT week, SUM(units) AS total_units, SUM(revenue) AS total_rev\n  FROM sales\n  WHERE region = 'West' AND week BETWEEN 7 AND 8\n  GROUP BY week\n), inventory_cte AS (\n  SELECT week, SUM(on_hand) AS total_on_hand\n  FROM inventory\n  WHERE region = 'West' AND week BETWEEN 7 AND 8\n  GROUP BY week\n), promotions_cte AS (\n  SELECT week, SUM(promo_flag) AS total_promos\n  FROM promotions\n  WHERE region = 'West' AND week BETWEEN 7 AND 8\n  GROUP BY week\n)\nSELECT s.week,\n       s.total_units,\n       s.total_rev,\n       i.total_on_hand,\n       p.total_promos,\n       100.0 * (s.total_units - COALESCE(LAG(s.total_units) OVER (ORDER BY s.week), 0)) /\n         NULLIF(COALESCE(LAG(s.total_units) OVER (ORDER BY s.week), 1), 0) AS units_pct_change,\n       100.0 * (s.total_rev - COALESCE(LAG(s.total_rev) OVER (ORDER BY s.week), 0)) /\n         NULLIF(COALESCE(LAG(s.total_rev) OVER (ORDER BY s.week), 1), 0) AS rev_pct_change\nFROM sales_cte s\nLEFT JOIN inventory_cte i ON s.week = i.week\nLEFT JOIN promotions_cte p ON s.week = p.week\nORDER BY s.week;",
+          "result": [
+            {
+              "week": 7,
+              "total_units": 10204,
+              "total_rev": 204119.78,
+              "total_on_hand": 2248,
+              "total_promos": 8,
+              "units_pct_change": 1020400.0,
+              "rev_pct_change": 20411978.0
+            },
+            {
+              "week": 8,
+              "total_units": 10067,
+              "total_rev": 207073.43,
+              "total_on_hand": 1272,
+              "total_promos": 8,
+              "units_pct_change": -1.3426107408859271,
+              "rev_pct_change": 1.4470180204975698
+            }
+          ]
+        },
+        {
+          "tool": "retrieve",
+          "query": "Check operational notes for West region distribution issues between week 7 and week 8 to see if any delays were reported and resolved.",
+          "result": [
+            {
+              "doc_id": "note_008",
+              "title": "Store Ops Note - West Region",
+              "text": "Store Ops Note - West Region\n\nWest region distribution center delays in week 7 were resolved by week 8, with inventory levels returning to normal shortly after.\n",
+              "score": 0.03279
+            },
+            {
+              "doc_id": "note_002",
+              "title": "Supply Chain Alert - Week 7 West Region",
+              "text": "Supply Chain Alert - Week 7 West Region\n\nSKU-1011 experienced a distribution center delay affecting West region stores in week 7, resulting in partial stockouts at several locations for several days that week.\n",
+              "score": 0.03175
+            },
+            {
+              "doc_id": "note_006",
+              "title": "Regional Performance Summary",
+              "text": "Regional Performance Summary\n\nNortheast and South regions have shown the most stable week-over-week sales patterns this quarter relative to Midwest and West, which have seen more promotional and competitive activity.\n",
+              "score": 0.03175
+            }
+          ]
+        }
+      ],
+      "plan": {
+        "steps": [
+          {
+            "tool": "sql",
+            "args": {
+              "query": "WITH sales_cte AS (\n  SELECT week, SUM(units) AS total_units, SUM(revenue) AS total_rev\n  FROM sales\n  WHERE region = 'West' AND week BETWEEN 7 AND 8\n  GROUP BY week\n), inventory_cte AS (\n  SELECT week, SUM(on_hand) AS total_on_hand\n  FROM inventory\n  WHERE region = 'West' AND week BETWEEN 7 AND 8\n  GROUP BY week\n), promotions_cte AS (\n  SELECT week, SUM(promo_flag) AS total_promos\n  FROM promotions\n  WHERE region = 'West' AND week BETWEEN 7 AND 8\n  GROUP BY week\n)\nSELECT s.week,\n       s.total_units,\n       s.total_rev,\n       i.total_on_hand,\n       p.total_promos,\n       100.0 * (s.total_units - COALESCE(LAG(s.total_units) OVER (ORDER BY s.week), 0)) /\n         NULLIF(COALESCE(LAG(s.total_units) OVER (ORDER BY s.week), 1), 0) AS units_pct_change,\n       100.0 * (s.total_rev - COALESCE(LAG(s.total_rev) OVER (ORDER BY s.week), 0)) /\n         NULLIF(COALESCE(LAG(s.total_rev) OVER (ORDER BY s.week), 1), 0) AS rev_pct_change\nFROM sales_cte s\nLEFT JOIN inventory_cte i ON s.week = i.week\nLEFT JOIN promotions_cte p ON s.week = p.week\nORDER BY s.week;"
+            }
+          },
+          {
+            "tool": "retrieve",
+            "args": {
+              "query": "Check operational notes for West region distribution issues between week 7 and week 8 to see if any delays were reported and resolved."
+            }
+          }
+        ]
+      },
+      "timings": {
+        "plan_sec": 16.38,
+        "execute_sec": 0.02,
+        "synthesize_sec": 14.31,
+        "retry_sec": 11.28,
+        "verify_sec": 0.0019
+      }
+    }
+  ]
+}
