@@ -13,7 +13,6 @@ import os
 import json
 import glob
 import numpy as np
-from rank_bm25 import BM25Okapi
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOCS_DIR = os.path.join(HERE, "data", "docs")
@@ -50,6 +49,13 @@ def _get_bm25():
     if _bm25_cache is not None:
         return _bm25_cache
     docs = _load_docs()
+    try:
+        from rank_bm25 import BM25Okapi
+    except ImportError as exc:
+        raise RuntimeError(
+            "Hybrid retrieval requires rank-bm25. Install project dependencies "
+            "with: python -m pip install -r requirements.txt"
+        ) from exc
     tokenized = [_tokenize(d["text"]) for d in docs]
     _bm25_cache = BM25Okapi(tokenized)
     return _bm25_cache
