@@ -30,8 +30,11 @@ Notes for 8GB RAM:
 ```bash
 cp .env.example .env
 ```
-Edit `.env` and add your `ANTHROPIC_API_KEY` (or adapt `agent/llm_client.py`
-to call OpenAI instead — it's one function).
+Edit `.env` and set `LLM_PROVIDER` to `anthropic`, `gemini`, or `groq`.
+Add the matching provider key (`ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, or
+`GROQ_API_KEY`). For Groq, `GROQ_MODEL` optionally overrides the default
+`openai/gpt-oss-20b`; for Anthropic/Gemini, `BIZCOPILOT_MODEL` overrides the
+provider default. Never paste keys into chat or commit `.env`.
 
 ## 3. Generate the synthetic data
 
@@ -116,8 +119,7 @@ well on a portfolio for an AI-focused role.
 ### Option B: Render.com (also free tier, works well for FastAPI)
 1. Push the repo to GitHub first (step 6 above).
 2. On render.com: New → Web Service → connect your GitHub repo.
-3. Render auto-detects the Dockerfile. Set the environment variable
-   `ANTHROPIC_API_KEY` in the dashboard's Environment tab.
+3. Render auto-detects the Dockerfile. Set the environment variable matching `LLM_PROVIDER` in the dashboard's Environment tab.
 4. Deploy. Render gives you a `https://<name>.onrender.com` URL.
 5. Note: Render's free tier spins the service down after inactivity, so the
    first request after idle takes ~30-60s to wake up — mention this if you
