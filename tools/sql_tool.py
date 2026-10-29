@@ -27,12 +27,20 @@ class SQLToolError(Exception):
 
 def run_sql(query: str, max_rows: int = 200):
     """Execute a read-only SQL query. Raises SQLToolError if the query looks unsafe."""
+    normalized = query.strip().lower()
+
     if _FORBIDDEN.search(query):
         raise SQLToolError("Only read-only SELECT queries are permitted.")
-    if not query.strip().lower().startswith("select"):
-        raise SQLToolError("Query must start with SELECT.")
 
-    conn = sqlite3.connect(DB_PATH)
+    if not (
+        normalized.startswith("select")
+        or normalized.startswith("with")
+    ):
+        raise SQLToolError("Query must start with SELECT or WITH.")
+
+    # URI mode=ro prevents writes even if a future query slips past the
+    # lightweight SQL keyword checks below.
+    conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
     try:
         cur = conn.execute(query)
