@@ -5,8 +5,8 @@ A retail/CPG category manager needs to diagnose sales or inventory anomalies
 every week (e.g. "why did SKU-1004 drop 30% in the Midwest?"), but doesn't
 have time to query dashboards or read every analyst note and competitor
 update. BizCopilot answers the question directly, in plain English, with
-every number traced back to a real source — a SQL query result or a
-retrieved document — rather than a plausible-sounding hallucination.
+every number traced back to a real source, a SQL query result or a
+retrieved document, rather than a plausible-sounding hallucination.
 
 ## Architecture
 
@@ -41,11 +41,11 @@ instead of a codebase.
 
 ## Why this design
 - **Grounding is enforced in code, not just prompted for.** The verifier
-  step doesn't trust the LLM to self-report accuracy — it mechanically
+  step doesn't trust the LLM to self-report accuracy, it mechanically
   checks every number in the output against the actual tool results.
 - **The agent is hand-rolled, not framework-hidden.** Planner/executor/
   synthesizer/verifier are plain Python functions so the control flow is
-  fully inspectable — useful both for debugging and for explaining the
+  fully inspectable, useful both for debugging and for explaining the
   design in an interview.
 - **The dataset has known ground truth.** Three anomalies are deliberately
   injected into the synthetic data with a matching "explanation" document,
@@ -56,21 +56,29 @@ instead of a codebase.
 
 Run `python3 -m eval.eval_harness --retrieval-only` for retrieval-only
 metrics (no API key needed), or drop `--retrieval-only` for the full
-end-to-end run (requires `ANTHROPIC_API_KEY`, makes real API calls).
+end-to-end run (requires the API key matching `LLM_PROVIDER`, makes real API calls).
 
 | Metric | Result |
 |---|---|
-| Retrieval Recall@3 | *fill in after running eval* |
-| Retrieval MRR | *fill in after running eval* |
-| End-to-end groundedness rate | *fill in after running eval* |
-| Avg. latency per question | *fill in after running eval* |
+| Retrieval Recall@3 | *100.00%* |
+| Retrieval MRR | *0.900* |
+| End-to-end groundedness rate | *80.00%* |
+| Avg. latency per question | *19.94s* |
 
-*(Numbers intentionally left blank here — fill them in with your actual
-run output once you have an API key set up. Don't put in a number you
-didn't measure.)*
+
+## Known limitations
+
+- The verifier is lexical/numeric: it cannot prove causal claims or ensure a
+  number is attached to the correct metric, region, or time period. The
+  synthesis prompt and evaluation cases also need to guard those failure modes.
+- The synthetic inventory generator can record zero end-of-week on-hand while
+  sales remain positive during that week. Treat this as a data-modeling caveat;
+  do not infer exact stockout timing from these snapshots alone.
+- Generated plans and summaries can vary between runs, and retrieval may return irrelevant or only partially relevant notes. End-to-end results should therefore be interpreted alongside the evaluation cases, not as a guarantee of accuracy for every question.
+
 
 ## Tech stack
-Python · FastAPI · Anthropic Claude API · sentence-transformers
+Python · FastAPI · hosted LLM APIs (Anthropic/Gemini/Groq) · sentence-transformers
 (all-MiniLM-L6-v2) · rank-bm25 · SQLite · vanilla HTML/JS frontend
 
 ## Repo structure
@@ -92,7 +100,7 @@ Quick start:
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env   # then add your ANTHROPIC_API_KEY
+cp .env.example .env   # choose LLM_PROVIDER and add its API key
 ./run.sh
 # open http://localhost:8000
 ```
