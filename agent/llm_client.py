@@ -9,18 +9,18 @@ import os
 import json
 
 from dotenv import load_dotenv
-load_dotenv()  # loads .env into os.environ - this is the only place we need to do this
+load_dotenv()
 
 PROVIDER = os.environ.get("LLM_PROVIDER", "anthropic").lower()
 
 # Anthropic: https://docs.anthropic.com/en/docs/about-claude/models
 ANTHROPIC_MODEL = os.environ.get("BIZCOPILOT_MODEL", "claude-sonnet-4-6")
 
-# Gemini: gemini-2.5-flash is the current stable GA model (scheduled to be
-# retired ~Oct 2026 - if that's happened by the time you read this, switch
-# this env var to whatever the current stable Gemini model is).
+# Gemini: gemini-2.5-flash
 GEMINI_MODEL = os.environ.get("BIZCOPILOT_MODEL", "gemini-2.5-flash")
 
+# Groq: gpt-oss-20b
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-20b")
 
 def _call_anthropic(system, user, max_tokens):
     api_key = os.environ.get("ANTHROPIC_API_KEY")
@@ -60,11 +60,68 @@ def _call_gemini(system, user, max_tokens, json_mode):
         config.response_mime_type = "application/json"
 
     response = client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=user,
-        config=config,
+    model=GEMINI_MODEL,
+    contents=user,
+    config=config,
     )
+
+    if response.text is None:
+        raise RuntimeError(
+            f"Gemini returned no text. "
+            f"candidates={response.candidates!r}, "
+            f"prompt_feedback={getattr(response, 'prompt_feedback', None)!r}"
+    )
+
     return response.text
+
+
+def _call_groq(system, user, max_tokens, json_mode):
+    api_key = os.environ.get("GROQ_API_KEY")
+    if not api_key:
+        raise RuntimeError("GROQ_API_KEY not set in .env")
+
+    from groq import Groq
+
+    client = Groq(api_key=api_key)
+
+    kwargs = {
+        "model": GROQ_MODEL,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        "max_completion_tokens": max_tokens,
+        "reasoning_effort": "low",
+    }
+
+    if json_mode:
+        kwargs["response_format"] = {"type": "json_object"}
+
+
+    # Validate JSON locally in call_llm_json().
+    response = client.chat.completions.create(**kwargs)
+
+    if not response.choices:
+        raise RuntimeError(
+            f"Groq returned no choices. Usage={response.usage!r}"
+        )
+
+    choice = response.choices[0]
+    print("Groq finish_reason:", choice.finish_reason)
+    print("Groq usage:", response.usage)
+    print("Groq message:", repr(choice.message))
+    content = choice.message.content
+
+    if not content or not content.strip():
+        raise RuntimeError(
+            "Groq returned no text. "
+            f"model={GROQ_MODEL!r}, "
+            f"finish_reason={choice.finish_reason!r}, "
+            f"usage={response.usage!r}, "
+            f"message={choice.message!r}"
+        )
+
+    return content
 
 
 def call_llm(system: str, user: str, max_tokens: int = 1000, json_mode: bool = False) -> str:
@@ -73,12 +130,14 @@ def call_llm(system: str, user: str, max_tokens: int = 1000, json_mode: bool = F
     If json_mode=True, the system prompt should already instruct the model
     to return ONLY valid JSON - this function does not silently coerce it.
     """
-    if PROVIDER == "gemini":
+    if PROVIDER == "groq":
+        return _call_groq(system, user, max_tokens, json_mode)
+    elif PROVIDER == "gemini":
         return _call_gemini(system, user, max_tokens, json_mode)
     elif PROVIDER == "anthropic":
         return _call_anthropic(system, user, max_tokens)
     else:
-        raise RuntimeError(f"Unknown LLM_PROVIDER '{PROVIDER}' - use 'anthropic' or 'gemini'.")
+        raise RuntimeError(f"Unknown LLM_PROVIDER '{PROVIDER}' ""- use 'anthropic', 'gemini', or 'groq'.")
 
 
 def call_llm_json(system: str, user: str, max_tokens: int = 1000) -> dict:
